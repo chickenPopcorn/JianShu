@@ -9,17 +9,40 @@ import { connect } from 'react-redux';
 import { actionCreators }  from './store';
 class Header extends Component{
     getListArea() {
-        const { focused, list } = this.props; 
-        if (focused){
+        const { 
+            focused, 
+            list, 
+            page,
+            totalPage,
+            mouseIn,
+            handleMouseEnter, 
+            handleMouseLeave,
+            handleChangePage,
+        } = this.props; 
+        const newList = list.toJS();
+        const pageList = [];
+
+        if (newList.length){
+            for (let i = (page * 10); i < Math.min((page + 1) * 10, newList.length); i ++ ){
+                pageList.push(
+                    <SearchInfoItem key={page*10+i}> {newList[i]}</SearchInfoItem>
+                );
+            }
+        }
+        if (focused || mouseIn){
             return (
-                <SearchInfo>
+                <SearchInfo 
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}>
                     <SearchInfoTitle>热门收索</SearchInfoTitle>
-                    <SearchInfoSwitch>换一批</SearchInfoSwitch>
+                    <SearchInfoSwitch
+                        onClick={()=>{handleChangePage(page, totalPage, this.spinIcon)}}
+                    >
+                        <i ref={(icon)=>{this.spinIcon=icon}} className="iconfont spin">&#xe851;</i>
+                        换一批
+                    </SearchInfoSwitch>
                     <SearchInfoList>
-                        { list.map((item) => {
-                            return <SearchInfoItem key={item}> {item}</SearchInfoItem>
-                          })
-                        }
+                        { pageList }
                     </SearchInfoList>
                 </SearchInfo>  
             )
@@ -52,7 +75,7 @@ class Header extends Component{
                                 onBlur={handleInputBlur}    
                             ></NavSearch>
                         </CSSTransition>
-                        <i className={focused ? 'focused iconfont': 'iconfont'}>&#xe623;</i>
+                        <i className={focused ? 'focused iconfont zoom': 'iconfont zoom'}>&#xe623;</i>
                     {this.getListArea()}
                     </SearchWrapper>
                     
@@ -73,7 +96,10 @@ class Header extends Component{
 const mapStateToProps = (state) => {
     return {
         focused: state.getIn(['header', 'focused']),
-        list: state.getIn(['header', 'list'])
+        mouseIn: state.getIn(['header', 'mouseIn']),
+        list: state.getIn(['header', 'list']),
+        page: state.getIn(['header', 'page']),
+        totalPage: state.getIn(['header', 'totalPage'])
     }
 }
 
@@ -84,7 +110,22 @@ const mapDispatchToProps = (dispatch) => {
             dispatch(actionCreators.searchFocus());
         },
         handleInputBlur() {
-            dispatch(actionCreators.searchBlur());
+            dispatch(actionCreators.searchBlur());   
+        },
+        handleMouseEnter() {
+            dispatch(actionCreators.mouseEnter());
+        },
+        handleMouseLeave() {
+            dispatch(actionCreators.mouseLeave());
+        },
+        handleChangePage(page, totalPage, spin) {
+            let originAngle = spin.style.transform.replace(/[^0-9]/ig, '');
+
+            originAngle = originAngle ? parseInt(originAngle, 10): 0;
+            console.log(originAngle);
+            spin.style.transform = `rotate(${originAngle+360}deg)`;
+            const nextPage = page < totalPage-1 ? page +1: 0;
+            dispatch(actionCreators.changePage(nextPage));
         }
     }
 }
